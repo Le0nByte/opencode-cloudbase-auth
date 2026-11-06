@@ -1,0 +1,20 @@
+{
+  "name": "opencode-cloudbase-auth",
+  "version": "0.1.0",
+  "description": "OpenCode/Magpie provider plugin: Tencent CloudBase AI (growth-plan tokens via cloud function proxy)",
+  "type": "module",
+  "main": "./index.mjs",
+  "files": [
+    "index.mjs",
+    "README.md"
+  ],
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "cloudbase"
+  ],
+  "license": "MIT",
+  "magpie": {
+    "maxConcurrency": 2
+  }
+}

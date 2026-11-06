@@ -1,0 +1,138 @@
+<?xml version="1.0" ?>
+<mxfile host="drawio-generator-v6">
+  <diagram name="CloudBase 成长计划接入 magpie 数据流">
+    <mxGraphModel dx="1050" dy="1500" grid="1" gridSize="10" guides="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+        <mxCell id="10" value="Agent (Hermes / Claude Code / Cursor)" style="ellipse;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="40" width="290" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="11" value="magpie 网关 127.0.0.1:3425" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="175" y="880" width="210" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="12" value="插件 opencode-cloudbase-auth (fetch 适配)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="265" y="280" width="320" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="13" value="客户端要流式?" style="rhombus;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="330" y="400" width="190" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="14" value="强制 stream:false 取完整 JSON" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="305" y="520" width="240" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="15" value="合成 OpenAI SSE 帧 + [DONE]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="165" y="760" width="220" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="16" value="CloudBase HTTP API /v1/functions/aiProxy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="560" y="640" width="310" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="17" value="云函数 node-sdk (云开发 SDK 通道)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="425" y="760" width="260" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="18" value="hy3 / hy4 / deepseek-v4.1-flash" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="425" y="880" width="250" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="19" value="成长计划额度扣减并返回" style="ellipse;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#000000;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="1000" width="190" height="50" as="geometry"/>
+        </mxCell>
+        <mxCell id="100" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="10" target="11">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="425" y="110" as="geometry"/>
+              <mxPoint x="280" y="110" as="geometry"/>
+              <mxPoint x="280" y="860" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="101" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="11" target="12">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="280" y="980" as="geometry"/>
+              <mxPoint x="425" y="980" as="geometry"/>
+              <mxPoint x="425" y="260" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="102" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="12" target="13">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="425" y="350" as="geometry"/>
+              <mxPoint x="425" y="380" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="103" value="是" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="13" target="14">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="425" y="470" as="geometry"/>
+              <mxPoint x="425" y="500" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="104" value="否" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="13" target="16">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="540" y="425" as="geometry"/>
+              <mxPoint x="540" y="480" as="geometry"/>
+              <mxPoint x="540" y="665" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="105" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="14" target="16">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="425" y="590" as="geometry"/>
+              <mxPoint x="715" y="590" as="geometry"/>
+              <mxPoint x="715" y="620" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="106" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="16" target="17">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="715" y="710" as="geometry"/>
+              <mxPoint x="555" y="710" as="geometry"/>
+              <mxPoint x="555" y="740" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="107" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="17" target="18">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="555" y="830" as="geometry"/>
+              <mxPoint x="550" y="830" as="geometry"/>
+              <mxPoint x="550" y="860" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="108" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="18" target="19">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="550" y="950" as="geometry"/>
+              <mxPoint x="425" y="950" as="geometry"/>
+              <mxPoint x="425" y="980" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="109" value="流式时" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="16" target="15">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="715" y="710" as="geometry"/>
+              <mxPoint x="275" y="710" as="geometry"/>
+              <mxPoint x="275" y="740" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="110" value="回传" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#000000;strokeWidth=1;endArrow=block;endFill=1;startArrow=none;" edge="1" parent="0" source="15" target="11">
+          <mxGeometry relative="0" as="geometry">
+            <Array as="points">
+              <mxPoint x="275" y="830" as="geometry"/>
+              <mxPoint x="280" y="830" as="geometry"/>
+              <mxPoint x="280" y="860" as="geometry"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
