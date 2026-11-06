@@ -6,13 +6,30 @@
   "main": "./index.mjs",
   "files": [
     "index.mjs",
-    "README.md"
+    "README.md",
+    "README.zh-CN.md"
   ],
   "keywords": [
     "opencode",
     "opencode-plugin",
-    "cloudbase"
+    "magpie",
+    "magpie-plugin",
+    "cloudbase",
+    "tencent-cloud",
+    "openai-compatible"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Le0nByte/opencode-cloudbase-auth.git"
+  },
+  "homepage": "https://github.com/Le0nByte/opencode-cloudbase-auth#readme",
+  "bugs": {
+    "url": "https://github.com/Le0nByte/opencode-cloudbase-auth/issues"
+  },
+  "author": "Le0nByte",
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "MIT",
   "magpie": {
     "maxConcurrency": 2

@@ -1,69 +1,96 @@
 # opencode-cloudbase-auth
 
-Magpie / OpenCode 供应商插件：把腾讯云开发（CloudBase）**小程序成长计划**赠送的模型额度接成 magpie 供应商。
+A [Magpie](https://usemagpie.ai) / [OpenCode](https://opencode.ai) **provider plugin** that turns Tencent CloudBase's *Mini Program Growth Plan* (小程序成长计划) free model quota into a regular OpenAI-compatible provider.
 
-## 为什么需要它
+[中文说明](README.zh-CN.md)
 
-CloudBase 的 AI 网关对成长计划额度做了通道限制：
+## Why this plugin exists
+
+CloudBase's AI gateway restricts the growth-plan quota to the **Mini Program SDK / CloudBase SDK channel** only. Calling the public AI endpoint with an API key fails outright:
 
 ```
 POST https://{envId}.api.tcloudbasegateway.com/v1/ai/hunyuan-v3/chat/completions
-→ 403 AI_CHANNEL_NOT_ALLOWED  小程序成长计划仅支持小程序 SDK 和云开发 SDK 调用
+→ 403 AI_CHANNEL_NOT_ALLOWED
+  小程序成长计划仅支持小程序 SDK 和云开发 SDK 调用
 ```
 
-只有「小程序 SDK / 云开发 SDK」通道能用这份额度。本插件配合一个云函数（默认名 `aiProxy`）绕开限制：
+Only requests that originate from the WeChat Mini Program SDK or the CloudBase SDK can spend that quota. This plugin works together with a small cloud function (`aiProxy`, deployed in the same CloudBase environment) that calls the models through `@cloudbase/node-sdk` — which *is* the allowed channel — and exposes it over CloudBase's HTTP API:
 
 ```
-agent → magpie 网关 → 本插件 → CloudBase HTTP API（云函数调用）
-                                        → 云函数内 @cloudbase/node-sdk（云开发 SDK 通道）
-                                        → hy3 / hy4 / deepseek-v4.1-flash（扣成长计划额度）
+Agent → magpie gateway → this plugin → CloudBase HTTP API (cloud function invoke)
+                                            → @cloudbase/node-sdk (SDK channel, allowed)
+                                            → hy3 / hy4 / deepseek-v4.1-flash (growth-plan quota)
 ```
 
-云函数的公网入口只返回一次性 JSON、不支持真流式，所以插件在 `fetch` 里强制 `stream:false` 拿到完整结果，再按客户端原本的意图合成 OpenAI SSE 帧。
+The cloud function's public entry point returns a single JSON body and does **not** support real streaming, so the plugin forces `stream: false` upstream, then synthesizes OpenAI SSE frames for clients that asked for a stream.
 
-## 数据流
+## Data flow
+
+![Data flow](https://raw.githubusercontent.com/Le0nByte/opencode-cloudbase-auth/main/docs/architecture.svg)
+
+<details>
+<summary>Mermaid source (editable)</summary>
 
 ```mermaid
 flowchart LR
-  subgraph client["客户端"]
+  subgraph client["Client"]
     A["Agent<br/>Hermes / Claude Code / Cursor"]
   end
 
-  subgraph magpie["magpie 网关 127.0.0.1:3425"]
-    B["路由到 provider cloudbase"]
-    C["插件 fetch 适配层<br/>强制非流式 + 合成 SSE"]
+  subgraph magpie["magpie gateway 127.0.0.1:3425"]
+    B["route to provider cloudbase"]
+    C["plugin fetch adapter<br/>force non-streaming + synthesize SSE"]
   end
 
-  subgraph cb["腾讯云开发"]
+  subgraph cb["Tencent CloudBase"]
     D["HTTP API<br/>/v1/functions/aiProxy"]
-    E["云函数 aiProxy<br/>@cloudbase/node-sdk"]
-    F["云开发 SDK 通道<br/>hy3 / hy4 / deepseek-v4.1-flash"]
+    E["cloud function aiProxy<br/>@cloudbase/node-sdk"]
+    F["CloudBase SDK channel<br/>hy3 / hy4 / deepseek-v4.1-flash"]
   end
 
   A -->|"model: cloudbase/hy3"| B --> C
   C -->|"stream: false"| D --> E --> F
-  F -->|"扣成长计划额度"| E
-  E -->|"完整 JSON"| C
-  C -->|"SSE 帧 + [DONE]"| A
+  F -->|"deduct growth-plan quota"| E
+  E -->|"full JSON"| C
+  C -->|"SSE frames + [DONE]"| A
 ```
 
-可编辑版本：[`docs/architecture.drawio`](docs/architecture.drawio)（用 [app.diagrams.net](https://app.diagrams.net) 打开）。客户端不支持 mermaid 时看静态版：[`docs/architecture.svg`](docs/architecture.svg)。
+</details>
 
-## 云函数（上游）
+Editable sources: [`docs/architecture.drawio`](docs/architecture.drawio) (open with [app.diagrams.net](https://app.diagrams.net)).
 
-Node.js 运行时，依赖 `@cloudbase/node-sdk`（>= 3.16）：
+## Install
+
+```bash
+# from GitHub
+magpie plugin add github:Le0nByte/opencode-cloudbase-auth
+
+# from npm
+magpie plugin add opencode-cloudbase-auth
+
+# from a local checkout (development)
+magpie plugin add ./opencode-cloudbase-auth
+```
+
+## Deploy the upstream cloud function
+
+Node.js runtime, dependency `@cloudbase/node-sdk >= 3.16`:
 
 ```js
 const tcb = require('@cloudbase/node-sdk')
+
 let app
 exports.main = async (event = {}) => {
   if (!app) app = tcb.init({ env: process.env.TCB_ENV || 'your-env-id', timeout: 120000 })
+
   const ai = app.ai()
   const provider = event.provider || 'hunyuan-v3'
   const model = event.model || 'hy3'
   const messages = event.messages || [{ role: 'user', content: 'hi' }]
+
   const r = await ai.createModel(provider).generateText({ model, messages })
   const u = r.usage || {}
+
   return {
     id: 'chatcmpl-' + Date.now(),
     object: 'chat.completion',
@@ -79,35 +106,75 @@ exports.main = async (event = {}) => {
 }
 ```
 
-部署后公网入口是 `https://{envId}.api.tcloudbasegateway.com/v1/functions/aiProxy`。
+Deploy it with `tcb fn deploy` (or the console editor), then the public entry point is:
 
-## 登录
+```
+https://{envId}.api.tcloudbasegateway.com/v1/functions/aiProxy
+```
 
-两种信息一起填：
+> Note: paths appended after the function name are ignored by the HTTP API, so the plugin's `/v1` suffix is harmless.
 
-| 字段 | 说明 |
+## Sign in
+
+Two values are collected at login:
+
+| Field | Description |
 | --- | --- |
-| 云开发环境 ID | 例如 `cloudbase-xxxxxxxx`，存在账号的 `metadata.envId` |
-| CloudBase API Key | 控制台「环境配置 → API Key 配置」创建，服务端密钥，永不过期 |
-
-> API Key 是环境最高权限凭据（可绕过数据库所有访问校验），只放在本机 `~/.config/magpie/plugin-auth.json`（权限 600）。
-
-## 模型
-
-`hy3`、`hy4`、`hy4-preview`、`deepseek-v4.1-flash`、`deepseek-v4.1-flash-1017` —— 均为成长计划抵扣范围内的模型。
-
-agent 里用 `cloudbase/hy3` 这样的 id 调用。
-
-## 已知限制
-
-- **非真流式**：上游一次性返回，插件合成 SSE，所以首字延迟 = 整段生成时间。
-- 云函数默认超时 60s（可在 `cloudbaserc.json` 调大到 900s 上限），长输出会被截断。
-- 成长计划额度 6 个月到期；到期后要切 `provider=cloudbase` 走资源点计费，改云函数里的 `provider` 字段即可。
-
-## 开发
+| CloudBase environment ID | e.g. `cloudbase-xxxxxxxx`, stored as `metadata.envId` |
+| CloudBase API key | Console → Environment settings → API Key → create. Server-side key, never expires |
 
 ```bash
-magpie plugin add ./opencode-cloudbase-auth
-magpie plugin login opencode-cloudbase-auth
-magpie provider test cloudbase          # 真发一次 completion
+magpie plugin login cloudbase
+magpie provider test cloudbase      # should print: ✓ chat <ms> · hy3
 ```
+
+> The API key is the environment's highest-privilege credential — it bypasses all database access checks. It is stored only in `~/.config/magpie/plugin-auth.json` (mode 600). Never ship it in client code or a public repo.
+
+## Models
+
+| Model id | Notes |
+| --- | --- |
+| `hy3` | Hunyuan 3, cheapest |
+| `hy4` | Hunyuan 4 |
+| `hy4-preview` | Hunyuan 4 preview |
+| `deepseek-v4.1-flash` | DeepSeek V4.1 Flash, peak/off-peak pricing |
+| `deepseek-v4.1-flash-1017` | DeepSeek V4.1 Flash 1017 snapshot |
+
+Call them as `cloudbase/hy3` from any agent.
+
+```bash
+curl -s http://127.0.0.1:3425/v1/chat/completions \
+  -H 'content-type: application/json' \
+  -H "authorization: Bearer $MAGPIE_KEY" \
+  -d '{"model":"cloudbase/hy3","messages":[{"role":"user","content":"hi"}],"stream":true}'
+```
+
+## Limitations
+
+- **Not real streaming.** The upstream returns one complete JSON body; the plugin synthesizes SSE frames, so time-to-first-token equals full generation time. Short answers feel fine (1–3 s), long ones will not.
+- **Cloud function timeout.** Default 60 s (`timeout` in `cloudbaserc.json`, max 900 s). Very long outputs get truncated.
+- **Quota expires.** The growth-plan grant lasts 6 months. After it runs out, change `provider` in the cloud function from `hunyuan-v3` to `cloudbase` to bill against resource points.
+- **Channel is fixed.** The plugin never calls `/v1/ai/*` directly — that path is blocked for growth-plan quota by design.
+
+## Development
+
+```bash
+git clone https://github.com/Le0nByte/opencode-cloudbase-auth
+cd opencode-cloudbase-auth
+magpie plugin add .
+magpie plugin login cloudbase
+magpie provider test cloudbase
+```
+
+After editing `index.mjs`, toggle the plugin to reload it:
+
+```bash
+magpie plugin off opencode-cloudbase-auth
+magpie plugin on  opencode-cloudbase-auth
+```
+
+Do **not** restart `magpie.exe` while an agent is using the gateway — the agent's own requests go through `127.0.0.1:3425`.
+
+## License
+
+MIT
