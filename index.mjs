@@ -14,7 +14,43 @@
  *   key    CloudBase 服务端 API Key
  */
 
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+
 const PROVIDER_ID = 'cloudbase'
+const USAGE_FILE = join(homedir(), '.config', 'magpie', 'cloudbase-usage.json')
+
+// CloudBase 没有 API Key 可用的官方用量查询接口（/v1/ai/* 受成长计划通道限制），
+// 所以这里只统计本插件自己发出的请求消耗，账号级余额仍以控制台为准。
+async function readUsage() {
+  try {
+    return JSON.parse(await readFile(USAGE_FILE, 'utf8'))
+  } catch {
+    return {}
+  }
+}
+
+async function bumpUsage(envId, tokens) {
+  if (!envId || !tokens) return
+  try {
+    const all = await readUsage()
+    const cur = all[envId] || { tokens: 0, requests: 0, updated: null }
+    cur.tokens += Number(tokens) || 0
+    cur.requests += 1
+    cur.updated = new Date().toISOString()
+    all[envId] = cur
+    await mkdir(join(homedir(), '.config', 'magpie'), { recursive: true })
+    await writeFile(USAGE_FILE, JSON.stringify(all, null, 2))
+  } catch {
+    // 统计失败不能影响请求
+  }
+}
+
+function envIdOf(url) {
+  const m = String(url || '').match(/^https:\/\/([a-z0-9-]+)\.api\.tcloudbasegateway\.com/i)
+  return m ? m[1] : ''
+}
 const FUNCTION_NAME = process.env.CLOUDBASE_AI_FUNCTION || 'aiProxy'
 
 // 成长计划（小程序成长计划）抵扣范围内的模型
@@ -115,6 +151,9 @@ async function adaptFetch(input, init) {
     })
   }
 
+  const total = data && data.usage && data.usage.total_tokens
+  if (total) await bumpUsage(envIdOf(url), total)
+
   if (!wantsStream) {
     return new Response(JSON.stringify(data), {
       status: 200,
@@ -167,6 +206,22 @@ export default async function cloudbasePlugin(_input, _options) {
           apiKey: (auth && auth.key) || '',
           fetch: adaptFetch
         }
+      },
+
+      usage: async (getAuth) => {
+        const auth = await getAuth()
+        const envId = resolveEnvId(auth)
+        const all = await readUsage()
+        const u = all[envId]
+        const out = {
+          user: envId,
+          plan: '小程序成长计划（官方额度见控制台）',
+          signIn: 'kept'
+        }
+        if (u && u.tokens) {
+          out.balance = `${u.tokens.toLocaleString('en-US')} tokens 已用（本插件累计）`
+        }
+        return out
       }
     }
   }
