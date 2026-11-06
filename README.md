@@ -47,7 +47,7 @@ flowchart LR
   C -->|"SSE 帧 + [DONE]"| A
 ```
 
-可编辑版本：[`docs/architecture.drawio`](docs/architecture.drawio)（用 [app.diagrams.net](https://app.diagrams.net) 打开）。
+可编辑版本：[`docs/architecture.drawio`](docs/architecture.drawio)（用 [app.diagrams.net](https://app.diagrams.net) 打开）。客户端不支持 mermaid 时看静态版：[`docs/architecture.svg`](docs/architecture.svg)。
 
 ## 云函数（上游）
 
